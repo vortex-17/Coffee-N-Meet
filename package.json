@@ -1,0 +1,53 @@
+{
+  "name": "coffee-n-meet",
+  "version": "1.0.0",
+  "description": "WebRTC based Video Chat system",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node ./src/server.js",
+    "dev": "NODE_ENV=development npm-run-all build start",
+    "transpile": "babel ./src --out-dir dist-src",
+    "clean": "rimraf dist-src",
+    "build": "npm-run-all clean transpile",
+    "watch:dev": "nodemon"
+  },
+  "nodemonConfig": {
+    "exec": "npm run dev",
+    "watch": [
+      "src/*",
+      "public/*"
+    ],
+    "ignore": [
+      "**/__tests__/**",
+      "*.test.js",
+      "*.spec.js"
+    ]
+  },
+  "babel": {
+    "presets": [
+      "@babel/preset-env"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vortex-17/Coffee-N-Meet.git"
+  },
+  "author": "Vivek Mehta",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/vortex-17/Coffee-N-Meet/issues"
+  },
+  "homepage": "https://github.com/vortex-17/Coffee-N-Meet#readme",
+  "dependencies": {
+    "@babel/cli": "^7.18.6",
+    "@babel/core": "^7.18.6",
+    "@babel/preset-env": "^7.18.6",
+    "cookie-parser": "^1.4.6",
+    "morgan": "^1.10.0",
+    "nodemon": "^2.0.18",
+    "npm-run-all": "^4.1.5",
+    "rimraf": "^3.0.2"
+  }
+}
