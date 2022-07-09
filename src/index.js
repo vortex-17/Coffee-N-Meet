@@ -11,7 +11,7 @@ const __dirname = path.join(path.dirname(__filename), "../");
 
 
 const app = express();
-app.use(logger("combined"));
+app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
@@ -80,8 +80,8 @@ io.sockets.on("connection" ,(socket) => {
 
 });
 
-httpServer.listen(app.get('port'), function () {
-  var port = httpServer.address().port;
+httpServer.listen(app.get('port'),  () => {
+  let port = httpServer.address().port;
   console.log('Running on : ', port);
 });
 
