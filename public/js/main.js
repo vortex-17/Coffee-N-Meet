@@ -2,6 +2,7 @@
 
 // Initialise all the variables
 let isChannelReady = false;
+let isStarted = false;
 let localPeerConnection;
 let isInitiator = false;
 let localStream;
@@ -29,7 +30,8 @@ let room = prompt('Enter the room name: ');
 let socket = io.connect();
 
 if(room !== '') {
-
+    socket.emit('create or join', room);
+    console.log('Attempted to create or  join room', room);
 }
 
 //defining socket events
@@ -58,12 +60,12 @@ socket.on("join", async (room) => {
     try {
         await createRTCConnection();
     } catch (err) {
-        console.log("Error with RTC Connection");
+        console.log("Error with RTC Connection, ", err);
     }
 } )
 
 socket.on("message", async (message, room) => {
-    console.log("Received a message from either the server or another peer");
+    console.log("Received a message from either the server or another peer", message.type);
     if(message.type === "offer") {
         if(!isStarted){
             try {
@@ -75,7 +77,7 @@ socket.on("message", async (message, room) => {
 
         console.log("Created RTC Connection");
         try {
-            await createAnswer(message);
+            await doAnswer(message);
         } catch (err) {
             console.log("issue with Answer creation");
         }
@@ -84,7 +86,7 @@ socket.on("message", async (message, room) => {
     } else if (message.type === "answer") {
         console.log("Got an answer from another peer");
         localPeerConnection.setRemoteDescription(new RTCSessionDescription(message));
-    } else if(message.type === "candidate") {
+    } else if(message.type === "icecandidate") {
         let candidate = new RTCIceCandidate({
             sdpMLineIndex : message.label,
             candidate : message.candidate
@@ -97,7 +99,7 @@ socket.on("message", async (message, room) => {
 //Helper functions
 
 function sendMessage(message) {
-    console.log("Sending a message to other peers");
+    console.log("Sending a message to other peers", message.type);
     socket.emit("message", message, room);
 }
 
@@ -112,7 +114,14 @@ async function createRTCConnection() {
         localPeerConnection = new RTCPeerConnection(server);
         localPeerConnection.addEventListener("icecandidate", handleConnection);
         localPeerConnection.addStream(localStream);
-        localPeerConnection.onaddstream = handleRemoteStream;
+        // try {
+        //     localPeerConnection.onaddstream = handleRemoteStreamAdded;
+        // } catch (err) {
+        //     console.log("Error while adding remote stream, ", err);
+        // }
+        localPeerConnection.onaddstream = handleRemoteStreamAdded;
+        localPeerConnection.onremovestream = handleRemoteStreamRemoved;
+        
         isStarted = true;
         console.log("Created RTC Peer Connection");
         if(isInitiator) {
@@ -132,7 +141,7 @@ async function createOffer() {
     console.log("Creating offer and sending to the other peer");
     let offer;
     try {
-        offer = await localPeerConnection.createOffer(offerOptions);
+        offer = await localPeerConnection.createOffer();
 
     } catch (err) {
         console.log("Error: ", err);
@@ -146,7 +155,7 @@ async function doAnswer(message) {
     console.log("Sending answer to the other peer");
     let answer;
     try {
-        answer = localPeerConnection.createAnswer(offerOptions);
+        answer = await localPeerConnection.createAnswer();
     } catch (err) {
         console.log("Error with creating answer: ", err);
     }
@@ -157,7 +166,7 @@ async function doAnswer(message) {
 function handleConnection(event) {
     console.log("ICE Candidate");
     const iceCandidate = event.candidate;
-    if(iceCandidate) {
+    if(event.candidate) {
         let message = {
             type : 'icecandidate',
             label: event.candidate.sdpMLineIndex,
@@ -174,10 +183,12 @@ function handleConnection(event) {
 async function setDescription(description) {
     console.log("Offer from local peerconnection");
     try {
-        await localPeerConnection.setDescription(description);
+        await localPeerConnection.setLocalDescription(description);
     } catch (err) {
         console.log("Error with setting local description, ", err);
     }
+
+    sendMessage(description)
 }
 
 async function getLocalMediaStream() {
@@ -189,14 +200,23 @@ async function getLocalMediaStream() {
     }
     localStream = mediastream;
     localVideo.srcObject = mediastream;
-    console.log("Got local stream up and running");
+    console.log("Got local stream up and running", localStream, localVideo);
 }
 
-async function handleRemoteStream(event) {
-    remoteStream = event.stream;
-    remoteVideo.srcObject = remoteStream;
-    console.log("Got remote stream");
+function handleRemoteStreamAdded(event) {
+    try {
+        remoteStream = event.stream;
+        remoteVideo.srcObject = remoteStream;
+    } catch {
+        console.log("Issue with adding remote stream");
+    }
+    
+    console.log("Got remote stream", remoteStream, remoteVideo);
 }   
+
+function handleRemoteStreamRemoved(event) {
+    console.log('Remote stream removed. Event: ', event);
+}
 
 function stop() {
     isStarted = false;

@@ -47,36 +47,54 @@ const httpServer = createServer(app);
 
 const io = new Server(httpServer, { cors: { origin: '*' } });
 
+let numClients = {}
+
 //socket programming
 
-io.sockets.on("connection" ,(socket) => {
+io.on("connection" ,(socket) => {
 
   console.log("Got a new connection: ", socket.id)
 
   socket.on("message", (message, room) => {
     console.log("message received by the server: ", message );
-    socket.to(room).emit("message" , message, room);
+    socket.in(room).emit("message" , message, room);
   });
 
   socket.on("create or join", (room) => {
-    let clientsInRoom = io.sockets.adapter.rooms[room];
-	  let numClients = clientsInRoom!=undefined ? Object.keys(io.sockets.adapter.rooms[room]).length:0;
+    // let clientsInRoom = io.sockets.adapter.rooms[room];
+	  // let numClients = clientsInRoom!=undefined ? Object.keys(io.sockets.adapter.rooms[room]).length:0;
+    // clientsInRoom = io.sockets.adapter.rooms[room]
+    // numClients = io.in(room).engine.clientsCount;
+    // console.log(typeof numClients);
+    console.log("Number of clients in the room are, ", room, numClients[room], numClients);
 
-    if(numClients == 0) {
+    if(numClients[room] === undefined || numClients[room] === 0) {
       //We can join the room
       socket.join(room);
       socket.emit("create", room, socket.id);
+      numClients[room] = 1;
 
-    } else if (numClients == 1) {
+    } else if (numClients[room] === 1) {
       console.log("Other client wants to join the room");
       io.sockets.in(room).emit("join", room);
       socket.join(room);
       socket.emit('joined', room, socket.id);
 		  io.sockets.in(room).emit('ready');
+      numClients[room]++;
     } else {
       socket.emit("full", room);
     }
   });
+  socket.on('ipaddr', function() {
+	  var ifaces = os.networkInterfaces();
+	  for (var dev in ifaces) {
+		ifaces[dev].forEach(function(details) {
+		  if (details.family === 'IPv4' && details.address !== '127.0.0.1') {
+			socket.emit('ipaddr', details.address);
+		  }
+		});
+	  }
+	});
 
 });
 
