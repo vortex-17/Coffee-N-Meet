@@ -4,6 +4,7 @@
 let isChannelReady = false;
 let isStarted = false;
 let localPeerConnection;
+let dataChannel;
 let isInitiator = false;
 let localStream;
 let remoteStream;
@@ -24,6 +25,10 @@ const offerOptions = {
 
 const localVideo = document.querySelector('#localVideo');
 const remoteVideo = document.querySelector('#remoteVideo');
+const dataChannelSend = document.querySelector('#dataChannelSend')
+const dataChannelReceive = document.querySelector('#dataChannelReceive')
+const sendButton = document.querySelector('#sendButton')
+
 
 let room = prompt('Enter the room name: ');
 
@@ -98,6 +103,8 @@ socket.on("message", async (message, room) => {
 
 //Helper functions
 
+// sendButton.addEventListener('click', sendDataChannel)
+
 function sendMessage(message) {
     console.log("Sending a message to other peers", message.type);
     socket.emit("message", message, room);
@@ -112,6 +119,9 @@ async function createRTCConnection() {
         }
         let server = null;
         localPeerConnection = new RTCPeerConnection(server);
+        dataChannel = localPeerConnection.createDataChannel("test");
+        localPeerConnection.addEventListener("datachannel", handleDataChannel);
+        dataChannel.addEventListener('message', receiveData);
         localPeerConnection.addEventListener("icecandidate", handleConnection);
         localPeerConnection.addStream(localStream);
         // try {
@@ -124,6 +134,18 @@ async function createRTCConnection() {
         
         isStarted = true;
         console.log("Created RTC Peer Connection");
+        sendButton.addEventListener('click', sendDataChannel)
+        dataChannel.addEventListener('open', event => {
+            dataChannelSend.disabled = false;
+            dataChannelSend.focus();
+            sendButton.disabled = false;
+        });
+        
+        // Disable input when closed
+        dataChannel.addEventListener('close', event => {
+            dataChannelSend.disabled = true;
+            sendButton.disabled = true;
+        });
         if(isInitiator) {
             createOffer();
         } else {
@@ -177,6 +199,25 @@ function handleConnection(event) {
     } else {
         console.log("Issue with IceCandidate/ No more Icecandidate left");
     }
+
+}
+
+function handleDataChannel(event) {
+    console.log("Handling Data Channel")
+    dataChannel = event.channel;
+}
+
+function sendDataChannel(event) {
+    const message = dataChannelSend.value;
+    console.log("Sending Data to Peer: ", message)
+    dataChannel.send(message);
+}
+
+function receiveData(event) {
+    const message = event.data;
+    console.log("Received some data: ", message)
+    //add message to the event box
+    dataChannelReceive.textContent += message + '\n';
 
 }
 

@@ -24,6 +24,12 @@
     <video id="remoteVideo" autoplay muted playsinline></video>
   </div>
 
+  <textarea id="dataChannelSend" disabled
+    placeholder="Press Start, enter some text, then press Send."></textarea>
+  <textarea id="dataChannelReceive" disabled></textarea>
+
+  <button id="sendButton">Send</button>
+
   <!-- This file is automatically added/served when running "node index.js". -->
   <script src="/socket.io/socket.io.js"></script>
   <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
