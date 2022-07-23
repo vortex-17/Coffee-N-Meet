@@ -81,10 +81,30 @@ io.on("connection" ,(socket) => {
       socket.emit('joined', room, socket.id);
 		  io.sockets.in(room).emit('ready');
       numClients[room]++;
+      console.log("rooms: ", socket.rooms)
     } else {
       socket.emit("full", room);
     }
   });
+
+  socket.on("terminate", () => {
+    let room;
+    for (const item of socket.rooms) {
+      if (String(item) !== String(socket.id) ){
+        room = item
+      }
+      console.log(item);
+    }
+    console.log(typeof socket.rooms)
+    console.log("Client disconnected ", socket.id, socket.rooms, room);
+    numClients[room]--;
+    console.log(numClients);
+  });
+
+  // socket.on("disconnect", (socket) => {
+  //   console.log("Client disconnected ", socket.id, socket.rooms);
+  //   numClients[socket.rooms]--;
+  // })
   socket.on('ipaddr', function() {
 	  var ifaces = os.networkInterfaces();
 	  for (var dev in ifaces) {

@@ -5,6 +5,7 @@ let isChannelReady = false;
 let isStarted = false;
 let localPeerConnection;
 let dataChannel;
+let endChannel;
 let isInitiator = false;
 let localStream;
 let remoteStream;
@@ -28,6 +29,7 @@ const remoteVideo = document.querySelector('#remoteVideo');
 const dataChannelSend = document.querySelector('#dataChannelSend')
 const dataChannelReceive = document.querySelector('#dataChannelReceive')
 const sendButton = document.querySelector('#sendButton')
+const terminateButton = document.querySelector('#terminateButton')
 
 
 let room = prompt('Enter the room name: ');
@@ -119,9 +121,10 @@ async function createRTCConnection() {
         }
         let server = null;
         localPeerConnection = new RTCPeerConnection(server);
-        dataChannel = localPeerConnection.createDataChannel("test");
-        localPeerConnection.addEventListener("datachannel", handleDataChannel);
+        dataChannel = localPeerConnection.createDataChannel("test", {negotiated: true, id: 1});
+        endChannel = localPeerConnection.createDataChannel("terminate", {negotiated: true, id: 2});
         dataChannel.addEventListener('message', receiveData);
+        endChannel.addEventListener('message', terminateReceive)
         localPeerConnection.addEventListener("icecandidate", handleConnection);
         localPeerConnection.addStream(localStream);
         // try {
@@ -140,6 +143,10 @@ async function createRTCConnection() {
             dataChannelSend.focus();
             sendButton.disabled = false;
         });
+
+        terminateButton.addEventListener('click', terminateSession)
+
+
         
         // Disable input when closed
         dataChannel.addEventListener('close', event => {
@@ -207,6 +214,11 @@ function handleDataChannel(event) {
     dataChannel = event.channel;
 }
 
+function handleEndChannel(event) {
+    console.log("Handling end channel");
+    endChannel = event.channel;
+}
+
 function sendDataChannel(event) {
     const message = dataChannelSend.value;
     console.log("Sending Data to Peer: ", message)
@@ -219,6 +231,19 @@ function receiveData(event) {
     //add message to the event box
     dataChannelReceive.textContent += message + '\n';
 
+}
+
+function terminateReceive(event) {
+    const message = event.data;
+    console.log("Received End of Session");
+    socket.emit("terminate", "Bye")
+    isInitiator = true;
+    stop();
+}
+
+function terminateSession(event) {
+    console.log("Terminating the channel")
+    endChannel.send("Bye")
 }
 
 async function setDescription(description) {
