@@ -11,6 +11,7 @@ const peer = {
     dataChannel : null,
     terminateChannel : null,
     socket : null,
+    file : null,
 }
 
 const media = {
@@ -21,7 +22,9 @@ const media = {
     dataChannelSend : null,
     dataChannelReceive : null,
     sendButton : null,
-    terminateButton : null
+    terminateButton : null,
+    fileInput : null,
+    shareButton : null
 }
 
 let mediaStreamConstraints = {

@@ -3,16 +3,8 @@
 import * as mediaCtrl from './media_ctrl.js'
 import {peer, rtc, media, sendMessage} from "./misc.js"
 
-// const rtc = {
-//     isInitiator : false,
-//     isChannelReady : false,
-// }
-
-// const peer = {
-//     localPeerConnection : null,
-//     dataChannel : null,
-//     terminateChannel : null,
-// }
+const MAXIMUM_MESSAGE_SIZE = 65535;
+const END_OF_FILE_MESSAGE = 'EOF';
 
 async function createRTCConnection() {
     if(true) { ///rtc.isChannelReady && !rtc.isStarted
@@ -27,19 +19,15 @@ async function createRTCConnection() {
         console.log("Local Connection: ", peer.localPeerConnection);
         peer.dataChannel = peer.localPeerConnection.createDataChannel("test", {negotiated: true, id: 1});
         peer.terminateChannel = peer.localPeerConnection.createDataChannel("terminate", {negotiated: true, id: 2});
-        console.log(1);
+        peer.filechannel = peer.localPeerConnection.createDataChannel("file", {negotiated: true, id: 3});
         peer.dataChannel.addEventListener('message', receiveData);
-        console.log(2);
         peer.terminateChannel.addEventListener('message', terminateReceive);
-        console.log(3);
+        peer.filechannel.addEventListener('message', fileReceive);
+        peer.filechannel.binaryType = 'arraybuffer'
         peer.localPeerConnection.addEventListener("icecandidate", handleConnection);
-        console.log(4);
         peer.localPeerConnection.addStream(media.localStream);
-        console.log(5);
         peer.localPeerConnection.onaddstream = mediaCtrl.handleRemoteStreamAdded;
-        console.log(6);
         peer.localPeerConnection.onremovestream = mediaCtrl.handleRemoteStreamRemoved;
-        console.log(7);
         
         rtc.isStarted = true;
         console.log("Created RTC Peer Connection");
@@ -49,6 +37,19 @@ async function createRTCConnection() {
             media.dataChannelSend.focus();
             media.sendButton.disabled = false;
         });
+
+        media.fileInput.addEventListener("change", (event) => {
+            peer.file = event.target.files[0];
+            media.shareButton.disabled = !peer.file;
+        });
+
+        media.shareButton.addEventListener("click", (event) => {
+            shareFile();
+        });
+
+        // peer.filechannel.onopen = async () => {
+            
+        // }
 
         media.terminateButton.addEventListener('click', terminateSession)
 
@@ -115,16 +116,6 @@ function handleConnection(event) {
 
 }
 
-// function handleDataChannel(event) {
-//     console.log("Handling Data Channel")
-//     peer.dataChannel = event.channel;
-// }
-
-// function handleEndChannel(event) {
-//     console.log("Handling end channel");
-//     peer.terminateChannel = event.channel;
-// }
-
 function sendDataChannel(event) {
     const message = media.dataChannelSend.value;
     console.log("Sending Data to Peer: ", message)
@@ -167,6 +158,51 @@ function stop() {
     isStarted = false;
     localPeerConnection.close();
     localPeerConnection = null;
+}
+
+async function shareFile() {
+    console.log("Sharing file");
+    if (peer.file) {
+        const buff = await peer.file.arrayBuffer();
+        for (let i = 0; i < buff.byteLength; i += MAXIMUM_MESSAGE_SIZE) {
+            peer.filechannel.send(buff.slice(i, i + MAXIMUM_MESSAGE_SIZE));
+        }
+        peer.filechannel.send(END_OF_FILE_MESSAGE);
+    }
+
+    console.log("File Shared");
+}
+
+function fileReceive(event) {
+    console.log("File Received");
+    const { data } = event;
+    const receivedBuffers = [];
+    try {
+      if (data !== END_OF_FILE_MESSAGE) {
+        receivedBuffers.push(data);
+    } else {
+        const arrayBuffer = receivedBuffers.reduce((acc, arrayBuffer) => {
+          const tmp = new Uint8Array(acc.byteLength + arrayBuffer.byteLength);
+          tmp.set(new Uint8Array(acc), 0);
+          tmp.set(new Uint8Array(arrayBuffer), acc.byteLength);
+          return tmp;
+        }, new Uint8Array());
+        const blob = new Blob([arrayBuffer]);
+        downloadFile(blob, "downloadable file");
+        } 
+    } catch (err) {
+      console.log('File transfer failed: ', err);
+    }
+}
+
+function downloadFile(blob, fileName) {
+    const a = document.createElement('a');
+    const url = window.URL.createObjectURL(blob);
+    a.href = url;
+    a.download = fileName;
+    a.click();
+    window.URL.revokeObjectURL(url);
+    a.remove()
 }
 
 export {

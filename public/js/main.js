@@ -11,6 +11,9 @@ media.dataChannelReceive = document.querySelector('#dataChannelReceive')
 media.sendButton = document.querySelector('#sendButton')
 media.terminateButton = document.querySelector('#terminateButton')
 
+media.fileInput = document.querySelector("#file-input");
+media.shareButton = document.querySelector("#share");
+
 
 let room = prompt('Enter the room name: ');
 
