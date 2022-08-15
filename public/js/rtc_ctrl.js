@@ -133,14 +133,20 @@ function receiveData(event) {
 function terminateReceive(event) {
     const message = event.data;
     console.log("Received End of Session");
-    peer.socket.emit("terminate", "Bye")
+    peer.socket.emit("terminate", "Bye");
     rtc.isInitiator = true;
     stop();
 }
 
 function terminateSession(event) {
-    console.log("Terminating the channel")
-    peer.terminateChannel.send("Bye")
+    console.log("Terminating the channel");
+    peer.terminateChannel.send("Bye");
+    media.localStream = null;
+    media.localVideo = null;
+    peer.localPeerConnection.close();
+    peer.localPeerConnection = null;
+    media.remoteStream = null;
+    media.remoteVideo = null;
 }
 
 async function setDescription(description) {
@@ -155,9 +161,11 @@ async function setDescription(description) {
 }
 
 function stop() {
-    isStarted = false;
-    localPeerConnection.close();
-    localPeerConnection = null;
+    rtc.isStarted = false;
+    // peer.localPeerConnection.close();
+    // peer.localPeerConnection = null;
+    // media.remoteStream = null;
+    // media.remoteVideo = null;
 }
 
 async function shareFile() {
