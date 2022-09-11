@@ -47,6 +47,14 @@ async function createRTCConnection() {
             shareFile();
         });
 
+        media.shareScreenBtn.addEventListener("click", async (event) => {
+            await mediaCtrl.shareScreen();
+        });
+
+        media.stopShareBtn.addEventListener("click", (event) => {
+            mediaCtrl.stopSharing();
+        });
+
         // peer.filechannel.onopen = async () => {
             
         // }

@@ -24,7 +24,10 @@ const media = {
     sendButton : null,
     terminateButton : null,
     fileInput : null,
-    shareButton : null
+    shareButton : null,
+    shareScreen : null,
+    shareScreenBtn : null,
+    stopShareBtn : null,
 }
 
 let mediaStreamConstraints = {

@@ -14,6 +14,10 @@ media.terminateButton = document.querySelector('#terminateButton')
 media.fileInput = document.querySelector("#file-input");
 media.shareButton = document.querySelector("#share");
 
+media.shareScreen = document.querySelector('#shareScreen');
+media.shareScreenBtn = document.querySelector('#shareScreenBtn');
+media.stopShareBtn = document.querySelector('#stopShareBtn');
+
 
 let room = prompt('Enter the room name: ');
 

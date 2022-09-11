@@ -1,6 +1,6 @@
 // Media Controls
 
-import {media, mediaStreamConstraints} from "./misc.js"
+import {media, mediaStreamConstraints, peer} from "./misc.js"
 
 
 async function getLocalMediaStream() {
@@ -30,5 +30,42 @@ function handleRemoteStreamRemoved(event) {
     console.log('Remote stream removed. Event: ', event);
 }
 
+async function shareScreen(){
+    console.log("Sharing Screen");
+    let displayMediaStream;
+    let screentrack;
+    try {
+        displayMediaStream = await navigator.mediaDevices.getDisplayMedia();
+    } catch (err) {
+        console.log("Could not share screen" ,err);
+    }
 
-export {media, getLocalMediaStream, handleRemoteStreamAdded, handleRemoteStreamRemoved}
+    console.log("Display media stream: ", displayMediaStream);
+    screentrack = displayMediaStream.getTracks()[0];
+    if (screentrack) {
+        console.log('replace camera track with screen track');
+        replaceTrack(screentrack);
+    }
+}
+
+async function stopSharing() {
+    media.shareScreen = null;
+    media.shareScreen.srcObject = null;
+}
+
+const replaceTrack = (newTrack) => {
+    const sender = peer.localPeerConnection.getSenders().find(sender =>
+      sender.track.kind === newTrack.kind 
+    );
+  
+    if (!sender) {
+      console.warn('failed to find sender');
+  
+      return;
+    }
+  
+    sender.replaceTrack(newTrack);
+  }
+
+
+export {media, getLocalMediaStream, handleRemoteStreamAdded, handleRemoteStreamRemoved, shareScreen, stopSharing}
