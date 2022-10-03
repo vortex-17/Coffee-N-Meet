@@ -14,6 +14,7 @@ function roomFull(){
 function create(){
     console.log("The room is created");
     rtc.isInitiator = true;
+    peer.polite = false;
 }
 
 async function join(){
@@ -27,21 +28,22 @@ async function join(){
 }
 
 async function message(message){
-    console.log("Recevied a message from server or another peer: ", message);
+    // console.log("Recevied a message from server or another peer: ", message);
+    console.log("Message recevied: ", message.type);
     if(message.type === "offer") {
-        if(!rtc.isStarted){
-            try {
-                await RTCCtrl.createRTCConnection();
-            } catch (err) {
-                console.log("Error with RTCcreateConnection");
-            }
-        }
+        // if(!rtc.isStarted){
+        //     try {
+        //         await RTCCtrl.createRTCConnection();
+        //     } catch (err) {
+        //         console.log("Error with RTCcreateConnection");
+        //     }
+        // }
 
         console.log("Created RTC Connection");
         try {
             await RTCCtrl.doAnswer(message);
         } catch (err) {
-            console.log("issue with Answer creation");
+            console.log("issue with Answer creation", err);
         }
 
         

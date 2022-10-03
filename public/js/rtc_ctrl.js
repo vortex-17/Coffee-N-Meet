@@ -24,10 +24,21 @@ async function createRTCConnection() {
         peer.terminateChannel.addEventListener('message', terminateReceive);
         peer.filechannel.addEventListener('message', fileReceive);
         peer.filechannel.binaryType = 'arraybuffer'
+        // peer.localPeerConnection.onnegotiationneeded = negotiate
         peer.localPeerConnection.addEventListener("icecandidate", handleConnection);
-        peer.localPeerConnection.addStream(media.localStream);
-        peer.localPeerConnection.onaddstream = mediaCtrl.handleRemoteStreamAdded;
+        // peer.localPeerConnection.addStream(media.localStream);
+        // console.log("Tracks getTracks()");
+        media.localStream.getTracks().forEach(track => peer.localPeerConnection.addTrack(track, media.localStream));
+        // peer.localPeerConnection.ontrack = mediaCtrl.handleRemoteStreamAdded;
         peer.localPeerConnection.onremovestream = mediaCtrl.handleRemoteStreamRemoved;
+
+        peer.localPeerConnection.ontrack = ev => {
+            console.log("Got a new track", ev);
+            if (ev.streams && ev.streams[0]) {
+                media.remoteVideo.srcObject = ev.streams[0];
+            }
+            peer.localPeerConnection.addTrack(ev.track);
+        }
         
         rtc.isStarted = true;
         console.log("Created RTC Peer Connection");
@@ -81,6 +92,17 @@ async function createRTCConnection() {
 
 }
 
+async function negotiate(){
+    if (!peer.polite){
+        console.log("Negotiating...");
+        try{
+            await createOffer();
+        } catch (err) {
+            console.log("ONN Error: ", err)
+        }
+    }
+}
+
 async function createOffer() {
     console.log("Creating offer and sending to the other peer");
     let offer;
@@ -105,6 +127,17 @@ async function doAnswer(message) {
     }
 
     setDescription(answer); 
+}
+
+async function setDescription(description) {
+    console.log("Offer from local peerconnection");
+    try {
+        await peer.localPeerConnection.setLocalDescription(description);
+    } catch (err) {
+        console.log("Error with setting local description, ", err);
+    }
+
+    sendMessage(description)
 }
 
 function handleConnection(event) {
@@ -157,16 +190,6 @@ function terminateSession(event) {
     media.remoteVideo = null;
 }
 
-async function setDescription(description) {
-    console.log("Offer from local peerconnection");
-    try {
-        await peer.localPeerConnection.setLocalDescription(description);
-    } catch (err) {
-        console.log("Error with setting local description, ", err);
-    }
-
-    sendMessage(description)
-}
 
 function stop() {
     rtc.isStarted = false;

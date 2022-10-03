@@ -24,6 +24,7 @@ function handleRemoteStreamAdded(event) {
     }
     
     console.log("Got remote stream", media.remoteStream, media.remoteVideo);
+    return media.remoteStream;
 }   
 
 function handleRemoteStreamRemoved(event) {
@@ -42,15 +43,20 @@ async function shareScreen(){
 
     console.log("Display media stream: ", displayMediaStream);
     screentrack = displayMediaStream.getTracks()[0];
-    if (screentrack) {
-        console.log('replace camera track with screen track');
-        replaceTrack(screentrack);
-    }
+    media.shareScreenStream = displayMediaStream;
+    // peer.localPeerConnection.addStream(media.shareScreenStream);
+    // peer.localPeerConnection.addTrack(screentrack, displayMediaStream);
+    displayMediaStream.getTracks().forEach(track => peer.localPeerConnection.addTrack(track, displayMediaStream));
+    media.shareScreen.srcObject = displayMediaStream;
+    console.log("Senders : ", peer.localPeerConnection.getSenders());
+    // if (screentrack) {
+    //     console.log('replace camera track with screen track');
+    //     replaceTrack(screentrack);
+    // }
 }
 
 async function stopSharing() {
     media.shareScreen = null;
-    media.shareScreen.srcObject = null;
 }
 
 const replaceTrack = (newTrack) => {

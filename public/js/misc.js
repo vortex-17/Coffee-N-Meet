@@ -12,6 +12,8 @@ const peer = {
     terminateChannel : null,
     socket : null,
     file : null,
+    polite : true,
+    room : '',
 }
 
 const media = {
@@ -25,9 +27,12 @@ const media = {
     terminateButton : null,
     fileInput : null,
     shareButton : null,
+    shareScreenStream : null,
     shareScreen : null,
     shareScreenBtn : null,
     stopShareBtn : null,
+    remoteShareStream : null,
+    remoteShareVideo : null
 }
 
 let mediaStreamConstraints = {
@@ -37,7 +42,7 @@ let mediaStreamConstraints = {
 
 function sendMessage(message) {
     console.log("Sending a message to other peers", message.type);
-    peer.socket.emit("message", message, "foo");
+    peer.socket.emit("message", message, peer.room);
 }
 
 export {

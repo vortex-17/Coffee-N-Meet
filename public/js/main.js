@@ -20,10 +20,10 @@ media.stopShareBtn = document.querySelector('#stopShareBtn');
 
 
 let room = prompt('Enter the room name: ');
-
+peer.room = room;
 peer.socket = io.connect();
 
-if(room !== '') {
+if(peer.room !== '') {
     peer.socket.emit('create or join', room);
     console.log('Attempted to create or  join room', room);
 }
