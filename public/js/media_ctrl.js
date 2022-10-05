@@ -45,8 +45,9 @@ async function shareScreen(){
     screentrack = displayMediaStream.getTracks()[0];
     media.shareScreenStream = displayMediaStream;
     // peer.localPeerConnection.addStream(media.shareScreenStream);
-    // peer.localPeerConnection.addTrack(screentrack, displayMediaStream);
-    displayMediaStream.getTracks().forEach(track => peer.localPeerConnection.addTrack(track, displayMediaStream));
+    peer.negotiated = false;
+    peer.localPeerConnection.addTrack(screentrack, displayMediaStream);
+    // displayMediaStream.getTracks().forEach(track => peer.localPeerConnection.addTrack(track, displayMediaStream));
     media.shareScreen.srcObject = displayMediaStream;
     console.log("Senders : ", peer.localPeerConnection.getSenders());
     // if (screentrack) {

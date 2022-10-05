@@ -39,24 +39,40 @@ async function message(message){
         //     }
         // }
 
-        console.log("Created RTC Connection");
-        try {
-            await RTCCtrl.doAnswer(message);
-        } catch (err) {
-            console.log("issue with Answer creation", err);
+        if(peer.localPeerConnection == null) {
+            try {
+                await RTCCtrl.createRTCConnection();
+            } catch (err) {
+                console.log("Error with RTCcreateConnection");
+            }
         }
 
+        const offerCollision = (message.type === "offer") && (rtc.makingOffer || peer.localPeerConnection.signalingState !== "stable");
+        let ignoreOffer = !peer.polite && offerCollision;
+        if (ignoreOffer) {
+            return;
+        }
+        console.log("Created RTC Connection");
+        if(!offerCollision){
+            try {
+                await RTCCtrl.doAnswer(message);
+                peer.negotiated = true;
+            } catch (err) {
+                console.log("issue with Answer creation", err);
+            }
+        }
         
     } else if (message.type === "answer") {
         console.log("Got an answer from another peer");
         peer.localPeerConnection.setRemoteDescription(new RTCSessionDescription(message));
+        peer.negotiated = true;
     } else if(message.type === "icecandidate") {
         let candidate = new RTCIceCandidate({
             sdpMLineIndex : message.label,
             candidate : message.candidate
         });
 
-        peer.localPeerConnection.addIceCandidate(candidate)
+        peer.localPeerConnection.addIceCandidate(candidate);
     }
 }
 

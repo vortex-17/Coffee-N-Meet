@@ -4,6 +4,7 @@ const rtc = {
     isInitiator : false,
     isChannelReady : false,
     isStarted : false,
+    makingOffer:false,
 }
 
 const peer = {
@@ -14,6 +15,8 @@ const peer = {
     file : null,
     polite : true,
     room : '',
+    negotiated : false,
+    tracks : {},
 }
 
 const media = {

@@ -1,5 +1,4 @@
 // WebRTC Controls
-
 import * as mediaCtrl from './media_ctrl.js'
 import {peer, rtc, media, sendMessage} from "./misc.js"
 
@@ -24,7 +23,6 @@ async function createRTCConnection() {
         peer.terminateChannel.addEventListener('message', terminateReceive);
         peer.filechannel.addEventListener('message', fileReceive);
         peer.filechannel.binaryType = 'arraybuffer'
-        // peer.localPeerConnection.onnegotiationneeded = negotiate
         peer.localPeerConnection.addEventListener("icecandidate", handleConnection);
         // peer.localPeerConnection.addStream(media.localStream);
         // console.log("Tracks getTracks()");
@@ -34,10 +32,30 @@ async function createRTCConnection() {
 
         peer.localPeerConnection.ontrack = ev => {
             console.log("Got a new track", ev);
-            if (ev.streams && ev.streams[0]) {
-                media.remoteVideo.srcObject = ev.streams[0];
+            console.log(ev.streams, ev.streams[0], ev.track);
+            // const video = new MediaStream([ev.track]);
+            // if (ev.streams && ev.streams[0]) {
+            //     if (video.sharescreen){
+            //         console.log("1234");
+            //         media.shareScreen.srcObject = ev.streams[0];
+            //     } else{
+            //         console.log("Hello world");
+            //         media.remoteVideo.srcObject = ev.streams[0];
+            //     }
+            // }
+            if (Object.keys(peer.tracks).length == 0){
+                const video = new MediaStream([ev.track]);
+                media.remoteVideo.srcObject = video;
+            } else {
+                const video = new MediaStream([ev.track]);
+                media.shareScreen.srcObject = video;
             }
-            peer.localPeerConnection.addTrack(ev.track);
+            if (ev.streams[0]) {
+                peer.tracks[Object.keys(peer.tracks).length] = ev.track.id;
+                peer.localPeerConnection.addTrack(ev.track);
+                console.log(peer.tracks);
+            }
+            
         }
         
         rtc.isStarted = true;
@@ -59,7 +77,7 @@ async function createRTCConnection() {
         });
 
         media.shareScreenBtn.addEventListener("click", async (event) => {
-            await mediaCtrl.shareScreen();
+            await shareScreen();
         });
 
         media.stopShareBtn.addEventListener("click", (event) => {
@@ -79,12 +97,13 @@ async function createRTCConnection() {
             media.dataChannelSend.disabled = true;
             media.sendButton.disabled = true;
         });
+        peer.localPeerConnection.onnegotiationneeded = negotiate;
         console.log("Peer Created");
-        if(rtc.isInitiator) {
-            createOffer();
-        } else {
-            console.log("Waiting for Offer");
-        }
+        // if(rtc.isInitiator) {
+        //     createOffer();
+        // } else {
+        //     console.log("Waiting for Offer");
+        // }
 
     } else {
         console.log("Waiting for users to join the meet room");
@@ -92,13 +111,49 @@ async function createRTCConnection() {
 
 }
 
+async function shareScreen(){
+    console.log("Sharing Screen");
+    let displayMediaStream;
+    let screentrack;
+    try {
+        displayMediaStream = await navigator.mediaDevices.getDisplayMedia();
+    } catch (err) {
+        console.log("Could not share screen" ,err);
+    }
+
+    screentrack = displayMediaStream.getTracks()[0];
+    media.shareScreenStream = displayMediaStream;
+    // peer.localPeerConnection.addStream(media.shareScreenStream);
+    peer.negotiated = false;
+    screentrack.sharescreen = true;
+    displayMediaStream.sharescreen = true;
+    console.log("Display media stream: ", displayMediaStream);
+    peer.localPeerConnection.addTrack(screentrack,displayMediaStream);
+    // console.log("Tracks : ", peer.localPeerConnection.getTracks());
+    // displayMediaStream.getTracks().forEach(track => peer.localPeerConnection.addTrack(track, displayMediaStream));
+    media.shareScreen.srcObject = displayMediaStream;
+    console.log("Senders : ", peer.localPeerConnection.getSenders());
+
+    await negotiate();
+    // if (screentrack) {
+    //     console.log('replace camera track with screen track');
+    //     replaceTrack(screentrack);
+    // }
+}
+
 async function negotiate(){
-    if (!peer.polite){
+    console.log("ONN fired...");
+    // peer.tracks = {};
+    if (!peer.negotiated){
         console.log("Negotiating...");
         try{
+            if(peer.localPeerConnection.signalingState != "stable") return;
+            rtc.makingOffer = true;
             await createOffer();
         } catch (err) {
             console.log("ONN Error: ", err)
+        } finally {
+            rtc.makingOffer = false;
         }
     }
 }
